@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DUAL // FUSION VAULT v10 — Genesis</title>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0c0f12">
+<link rel="apple-touch-icon" href="./icon-192.png">
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('Service Worker Registered'));
+  }
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+    --bg-deep: #030406;
+    --glass-surface: rgba(18, 18, 22, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-blur: 30px;
+    
+    --neon-cyan: #00f2ff;
+    --neon-purple: #bd00ff;
+    --neon-orange: #ff9a3c;
+    --neon-gold: #ffd250;
+    
+    --font-ui: 'Plus Jakarta Sans', sans-serif;
+    --font-code: 'JetBrains Mono', monospace;
+    
+    --ease-overshoot: cubic-bezier(0.34, 1.3, 0.64, 1);
+    --ease-smooth: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; }
+
+body {
+    margin: 0; padding: 20px 10px; min-height: 100vh;
+    background-color: var(--bg-deep); color: #e2e8f0;
+    font-family: var(--font-ui);
+    display: flex; flex-direction: column; align-items: center;
+    background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 50px 50px;
+    overflow-x: hidden;
+}
+
+/* --- AMBIENT --- */
+.ambient-blob { position: fixed; border-radius: 50%; filter: blur(90px); opacity: 0.12; z-index: -1; animation: float 20s infinite alternate ease-in-out; pointer-events: none; }
+.blob-1 { width: 60vw; height: 60vw; background: var(--neon-cyan); top: -20%; left: -20%; }
+.blob-2 { width: 50vw; height: 50vw; background: var(--neon-purple); bottom: -20%; right: -20%; animation-delay: -5s; }
+@keyframes float { 0% { transform: translate(0,0); } 100% { transform: translate(40px, 60px); } }
+
+/* --- CORE LAYOUT --- */
+.container { width: 100%; max-width: 520px; z-index: 10; display: flex; flex-direction: column; gap: 24px; }
+
+/* --- FUSION CARD (HEADER/IDENTITY) --- */
+.fusion-card {
+    width: 100%;
+    background: var(--glass-surface); backdrop-filter: blur(var(--glass-blur)); -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border); border-radius: 32px;
+    padding: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    transition: all 0.5s var(--ease-overshoot);
+    position: relative; overflow: hidden;
+}
+.fusion-card.compact { padding: 16px 20px; border-radius: 24px; }
+.fusion-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); }
+
+/* Vibe Gold Pulse */
+.vibe-gold { border-color: rgba(255, 210, 80, 0.3); box-shadow: 0 0 20px rgba(255, 210, 80, 0.1); animation: pulseGold 3s infinite; }
+@keyframes pulseGold { 0%, 100% { box-shadow: 0 0 15px rgba(255,210,80,0.05); } 50% { box-shadow: 0 0 25px rgba(255,210,80,0.15); } }
+
+.card-header { display: flex; align-items: center; gap: 16px; cursor: pointer; }
+.avatar-slot { width: 56px; height: 56px; border-radius: 14px; overflow: hidden; flex-shrink: 0; background: rgba(0,0,0,0.3); }
+
+.identity-block { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.brand-dual {
+    font-size: 1.8rem; font-weight: 900; line-height: 0.9; letter-spacing: -1.5px;
+    background: linear-gradient(-45deg, #fff, var(--neon-cyan), var(--neon-purple), #fff);
+    background-size: 300%; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    animation: gradientFlow 5s ease infinite;
+}
+@keyframes gradientFlow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+.user-meta { font-size: 0.85rem; color: rgba(255,255,255,0.6); font-family: var(--font-code); display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+.badge-vibe { padding: 2px 6px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); font-size: 0.7rem; }
+.badge-vibe.gold { color: var(--neon-gold); border-color: rgba(255, 210, 80, 0.3); }
+
+.modules-area {
+    display: grid; grid-template-rows: 0fr; opacity: 0;
+    transition: all 0.4s var(--ease-smooth); margin-top: 0;
+}
+.fusion-card.expanded .modules-area { grid-template-rows: 1fr; opacity: 1; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--glass-border); }
+.modules-inner { overflow: hidden; min-height: 0; display: flex; flex-direction: column; gap: 16px; }
+
+/* Inputs & Forms */
+.cyber-input {
+    width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
+    border-radius: 12px; padding: 14px; color: #fff;
+    font-family: var(--font-code); font-size: 0.85rem; transition: 0.3s;
+}
+.cyber-input:focus { border-color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0,242,255,0.1); background: rgba(0,0,0,0.5); }
+.cyber-area { min-height: 100px; resize: vertical; line-height: 1.5; }
+
+.action-row { display: flex; gap: 10px; }
+.btn-fusion {
+    flex: 1; padding: 12px; border: 1px solid var(--glass-border); border-radius: 10px;
+    background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.8);
+    font-family: var(--font-ui); font-weight: 700; font-size: 0.75rem; letter-spacing: 1px;
+    cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn-fusion:hover { background: rgba(255,255,255,0.08); color: #fff; transform: translateY(-2px); }
+.btn-fusion.accent { border-color: rgba(0, 242, 255, 0.3); color: var(--neon-cyan); }
+.btn-fusion.accent:hover { background: rgba(0, 242, 255, 0.1); box-shadow: 0 0 15px rgba(0,242,255,0.2); }
+
+/* --- VAULT ITEMS --- */
+.vault-list { display: flex; flex-direction: column; gap: 16px; width: 100%; }
+
+.vault-card {
+    background: var(--glass-surface); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border); border-radius: 20px;
+    padding: 16px; overflow: hidden; transition: transform 0.3s var(--ease-overshoot);
+}
+.vault-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.15); }
+.vault-card.active { border-color: var(--neon-cyan); box-shadow: 0 0 20px rgba(0,242,255,0.1); }
+
+.vc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: pointer; }
+.vc-title { font-weight: 800; font-size: 0.95rem; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
+.vc-meta { font-family: var(--font-code); font-size: 0.65rem; color: rgba(255,255,255,0.4); display: flex; gap: 6px; align-items: center; }
+.vc-tag { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; color: var(--neon-cyan); }
+
+.vc-toolbar { display: flex; gap: 4px; }
+.icon-btn {
+    width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    background: transparent; border: 1px solid transparent; color: rgba(255,255,255,0.5); cursor: pointer; transition: 0.2s;
+}
+.icon-btn:hover { background: rgba(255,255,255,0.1); color: #fff; transform: scale(1.1); }
+.icon-btn.destruct:hover { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+
+.vc-content {
+    max-height: 0; opacity: 0; overflow: hidden; transition: all 0.4s var(--ease-smooth);
+    border-top: 1px solid transparent; margin-top: 0;
+}
+.vault-card.expanded .vc-content { max-height: 800px; opacity: 1; border-color: var(--glass-border); margin-top: 12px; padding-top: 12px; }
+
+.frame-box { margin-top: 10px; background: #fff; border-radius: 8px; height: 300px; width: 100%; border: none; }
+
+/* Filter Bar */
+.filter-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 4px; }
+.filter-pill {
+    padding: 6px 14px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border);
+    color: rgba(255,255,255,0.6); font-size: 0.7rem; font-weight: 700; cursor: pointer; white-space: nowrap; transition: 0.2s;
+}
+.filter-pill.active { background: var(--neon-purple); color: #fff; border-color: var(--neon-purple); box-shadow: 0 0 15px rgba(189, 0, 255, 0.2); }
+
+/* Activation ASCII Block */
+.ascii-block {
+    font-family: var(--font-code); font-size: 0.7rem; color: rgba(255,255,255,0.7);
+    background: rgba(0,0,0,0.4); border-radius: 12px; padding: 12px; white-space: pre-wrap;
+    border: 1px dashed var(--glass-border); margin-bottom: 10px;
+}
+
+</style>
+</head>
+<body>
+
+<div class="ambient-blob blob-1"></div>
+<div class="ambient-blob blob-2"></div>
+
+<div class="container">
+
+    <div class="fusion-card compact" id="mainCard">
+        <div class="card-header" onclick="toggleMainCard()">
+            <div class="avatar-slot" id="avatarTarget"></div>
+            <div class="identity-block">
+                <div class="brand-dual">DUAL // FUSION</div>
+                <div class="user-meta">
+                    <span id="userNameDisplay">CONVIDADO</span>
+                    <span class="badge-vibe" id="userVibeBadge">v:--</span>
+                    <span style="margin-left:auto; color:var(--neon-cyan)" id="clockDisplay">00:00</span>
+                </div>
+            </div>
+            <i data-lucide="chevron-down" id="mainChevron" style="opacity:0.5; transition: 0.3s;"></i>
+        </div>
+
+        <div class="modules-area">
+            <div class="modules-inner">
+                <input class="cyber-input" id="inputUser" placeholder="Identifique-se para calibração..." oninput="updateIdentity()" autocomplete="off">
+                
+                <div class="ascii-block" id="asciiDisplay" style="display:none;"></div>
+                <div class="action-row" id="asciiActions" style="display:none;">
+                     <button class="btn-fusion" onclick="copyActivation()">COPIAR DNA</button>
+                     <button class="btn-fusion" onclick="exportActivation()">EXPORTAR PNG</button>
+                </div>
+
+                <div style="height:1px; background:var(--glass-border); margin: 5px 0;"></div>
+                
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:0.75rem; font-weight:800; color:var(--neon-orange); letter-spacing:1px;">⚡ INFINITY INJECTOR</span>
+                    <button class="icon-btn" onclick="pasteMagic()" title="Clipboard Paste"><i data-lucide="clipboard-copy"></i></button>
+                </div>
+                
+                <textarea id="injectorContent" class="cyber-input cyber-area" placeholder="Cole código, notas, HTML ou JSON aqui..."></textarea>
+                
+                <div class="action-row">
+                    <input id="injectorGroup" class="cyber-input" style="width:30%" placeholder="TAG (ex: CODE)">
+                    <button class="btn-fusion accent" onclick="injectManual()">SALVAR NO VAULT</button>
+                    <input type="file" id="importFile" hidden onchange="importVault(event)">
+                    <button class="btn-fusion" onclick="document.getElementById('importFile').click()" title="Importar Backup"><i data-lucide="upload"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <div class="filter-pill active" onclick="filterVault('ALL', this)">ALL</div>
+        <div class="filter-pill" onclick="filterVault('CODE', this)">CODE</div>
+        <div class="filter-pill" onclick="filterVault('DOCS', this)">DOCS</div>
+        <div class="filter-pill" onclick="filterVault('CLIPBOARD', this)">CLIPBOARD</div>
+    </div>
+
+    <div class="vault-list" id="vaultGrid"></div>
+
+</div>
+
+<script>
+    // --- INIT ---
+    lucide.createIcons();
+    let vaultItems = JSON.parse(localStorage.getItem('dual_vault_v10') || '[]');
+    let currentUser = localStorage.getItem('fusion_user') || '';
+    let currentFilter = 'ALL';
+
+    // --- UTILS (3-6-9 Logic) ---
+    function hashString(str) {
+        let h = 2166136261 >>> 0;
+        for(let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+        return h >>> 0;
+    }
+    function reduce369(str) {
+        if(!str) return '--';
+        const s = str.split('').reduce((acc,ch)=> acc + ch.charCodeAt(0), 0);
+        let root = s;
+        while(root > 9) root = String(root).split('').reduce((a,b)=>a+Number(b), 0);
+        return root;
+    }
+    function generateAvatar(seedStr) {
+        const h = hashString(seedStr || 'DUAL');
+        const c1 = `hsl(${h % 360}, 100%, 60%)`;
+        const c2 = `hsl(${(h * 37) % 360}, 100%, 50%)`;
+        return `<svg viewBox="0 0 100 100" width="100%" height="100%"><defs><linearGradient id="g${h}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs><rect width="100" height="100" fill="#080b12"/><circle cx="50" cy="50" r="25" fill="url(#g${h})"/><path d="M50 10 A40 40 0 0 1 90 50" stroke="url(#g${h})" stroke-width="4" fill="none"><animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="10s" repeatCount="indefinite"/></path></svg>`;
+    }
+
+    // --- IDENTITY SYSTEM ---
+    function renderIdentity() {
+        const root = reduce369(currentUser);
+        document.getElementById('userNameDisplay').textContent = currentUser.toUpperCase() || 'CONVIDADO';
+        document.getElementById('userVibeBadge').textContent = `v:${root}`;
+        document.getElementById('avatarTarget').innerHTML = generateAvatar(currentUser);
+        
+        const card = document.getElementById('mainCard');
+        const badge = document.getElementById('userVibeBadge');
+        
+        // 3-6-9 Activation
+        if([3,6,9].includes(root)) {
+            card.classList.add('vibe-gold');
+            badge.classList.add('gold');
+        } else {
+            card.classList.remove('vibe-gold');
+            badge.classList.remove('gold');
+        }
+
+        if(currentUser) generateAscii();
+    }
+
+    function updateIdentity() {
+        const val = document.getElementById('inputUser').value;
+        currentUser = val;
+        localStorage.setItem('fusion_user', val);
+        renderIdentity();
+    }
+
+    function toggleMainCard() {
+        const c = document.getElementById('mainCard');
+        c.classList.toggle('expanded');
+        c.classList.toggle('compact');
+        const icon = document.getElementById('mainChevron');
+        icon.style.transform = c.classList.contains('expanded') ? 'rotate(180deg)' : 'rotate(0deg)';
+        if(c.classList.contains('expanded') && !document.getElementById('inputUser').value) {
+            document.getElementById('inputUser').focus();
+        }
+    }
+
+    function generateAscii() {
+        const disp = document.getElementById('asciiDisplay');
+        const acts = document.getElementById('asciiActions');
+        if(!currentUser) { disp.style.display='none'; acts.style.display='none'; return; }
+        
+        const name = `${currentUser}.Dual Infodose`;
+        const border = '+'+'-'.repeat(name.length + 8)+'+';
+        const txt = `${border}\n| SYSTEM: ACTIVATED     |\n| USER:   ${name.padEnd(name.length)} |\n| VIBE:   ${reduce369(currentUser)}             |\n${border}`;
+        
+        disp.textContent = txt;
+        disp.style.display = 'block';
+        acts.style.display = 'flex';
+    }
+
+    // --- VAULT LOGIC ---
+    function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
+    function nowIso() { return new Date().toISOString(); }
+
+    function renderVault() {
+        const grid = document.getElementById('vaultGrid');
+        grid.innerHTML = '';
+        
+        const filtered = currentFilter === 'ALL' ? vaultItems : vaultItems.filter(i => (i.group || '').toUpperCase() === currentFilter);
+        
+        if(filtered.length === 0) {
+            grid.innerHTML = `<div style="text-align:center; padding:20px; color:rgba(255,255,255,0.3); font-family:var(--font-code);">Nenhum dado no fluxo.</div>`;
+            return;
+        }
+
+        filtered.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'vault-card';
+            el.id = `card-${item.id}`;
+            
+            // Check content for 369 resonance
+            if(item.content.includes('369') || item.group === 'GOLD') el.style.borderColor = 'rgba(255,210,80,0.4)';
+
+            const dateStr = new Date(item.date).toLocaleDateString('pt-BR');
+            
+            el.innerHTML = `
+                <div class="vc-header" onclick="toggleItem('${item.id}')">
+                    <div style="flex:1; overflow:hidden;">
+                        <div class="vc-title">${escapeHtml(item.title)}</div>
+                        <div class="vc-meta">
+                            ${item.group ? `<span class="vc-tag">${item.group}</span>` : ''}
+                            <span>${dateStr}</span>
+                        </div>
+                    </div>
+                    <div class="vc-toolbar">
+                        <button class="icon-btn" onclick="event.stopPropagation(); renderFrame('${item.id}')" title="Preview"><i data-lucide="play"></i></button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); copyItem('${item.id}')" title="Copy"><i data-lucide="copy"></i></button>
+                        <button class="icon-btn destruct" onclick="event.stopPropagation(); deleteItem('${item.id}')" title="Delete"><i data-lucide="trash-2"></i></button>
+                    </div>
+                </div>
+                <div class="vc-content" id="content-${item.id}">
+                    <textarea class="cyber-input cyber-area" readonly>${item.content}</textarea>
+                    <div id="frame-box-${item.id}" style="display:none;"></div>
+                </div>
+            `;
+            grid.appendChild(el);
+        });
+        lucide.createIcons();
+    }
+
+    function injectManual() {
+        const content = document.getElementById('injectorContent').value;
+        const group = document.getElementById('injectorGroup').value;
+        if(!content.trim()) return;
+        
+        const title = content.split('\n')[0].substring(0,40) || 'Untitled Node';
+        
+        vaultItems.unshift({
+            id: uid(),
+            title: title.replace(/[#<]/g,'').trim(),
+            content: content,
+            group: group.toUpperCase(),
+            date: nowIso()
+        });
+        
+        saveVault();
+        document.getElementById('injectorContent').value = '';
+        toggleMainCard(); // Retract
+    }
+
+    async function pasteMagic() {
+        try {
+            const text = await navigator.clipboard.readText();
+            document.getElementById('injectorContent').value = text;
+        } catch(e) { alert('Acesso ao clipboard negado pelo navegador.'); }
+    }
+
+    function toggleItem(id) {
+        const c = document.getElementById(`card-${id}`);
+        c.classList.toggle('expanded');
+        // Reset frame if closing
+        if(!c.classList.contains('expanded')) {
+            const box = document.getElementById(`frame-box-${id}`);
+            box.style.display = 'none'; box.innerHTML = '';
+        }
+    }
+
+    function renderFrame(id) {
+        const item = vaultItems.find(i => i.id === id);
+        if(!item) return;
+        
+        // Force expand
+        const card = document.getElementById(`card-${id}`);
+        if(!card.classList.contains('expanded')) card.classList.add('expanded');
+        
+        const box = document.getElementById(`frame-box-${id}`);
+        box.style.display = 'block';
+        
+        // Toolbar for Frame
+        box.innerHTML = `
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-bottom:8px; margin-top:8px;">
+                <button class="vc-tag" onclick="launchCinema('${id}')" style="cursor:pointer; border:none;">⛶ CINEMA MODE</button>
+                <button class="vc-tag" onclick="document.getElementById('frame-box-${id}').style.display='none'" style="cursor:pointer; border:none; color:#ef4444;">FECHAR</button>
+            </div>
+            <iframe class="frame-box" srcdoc="${escapeHtmlAttr(item.content)}" sandbox="allow-scripts"></iframe>
+        `;
+    }
+
+    function launchCinema(id) {
+        const item = vaultItems.find(i => i.id === id);
+        if(!item) return;
+        
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed; inset:0; background:#000; z-index:9999; display:flex; flex-direction:column;';
+        
+        const bar = document.createElement('div');
+        bar.style.cssText = 'padding:10px; background:#111; display:flex; justify-content:flex-end;';
+        bar.innerHTML = `<button style="background:#ef4444; color:white; border:none; padding:8px 16px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="this.parentElement.parentElement.remove()">SAIR DO MODO CINEMA</button>`;
+        
+        const frame = document.createElement('iframe');
+        frame.style.cssText = 'flex:1; width:100%; border:none; background:#fff;';
+        frame.sandbox = 'allow-scripts';
+        frame.srcdoc = item.content;
+        
+        overlay.appendChild(bar);
+        overlay.appendChild(frame);
+        document.body.appendChild(overlay);
+    }
+
+    function deleteItem(id) {
+        if(confirm('Dissolver este nodo de memória?')) {
+            vaultItems = vaultItems.filter(i => i.id !== id);
+            saveVault();
+        }
+    }
+
+    function copyItem(id) {
+        const item = vaultItems.find(i => i.id === id);
+        navigator.clipboard.writeText(item.content);
+        // visual feedback could go here
+    }
+
+    function filterVault(filter, btn) {
+        currentFilter = filter;
+        document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        renderVault();
+    }
+    
+    function importVault(ev) {
+        const file = ev.target.files[0];
+        if(!file) return;
+        const r = new FileReader();
+        r.onload = e => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if(Array.isArray(data)) {
+                    data.forEach(d => {
+                        if(!d.id) d.id = uid();
+                        vaultItems.unshift(d);
+                    });
+                    saveVault();
+                    alert('Sincronização externa concluída.');
+                }
+            } catch(err) { alert('Arquivo corrompido ou incompatível.'); }
+        };
+        r.readAsText(file);
+    }
+
+    function saveVault() {
+        localStorage.setItem('dual_vault_v10', JSON.stringify(vaultItems));
+        renderVault();
+    }
+    
+    function copyActivation() {
+        const txt = document.getElementById('asciiDisplay').textContent;
+        navigator.clipboard.writeText(txt);
+    }
+
+    function exportActivation() {
+        // Simple canvas export
+        html2canvas(document.getElementById('asciiDisplay'), { backgroundColor: '#000' }).then(canvas => {
+            const a = document.createElement('a');
+            a.download = 'dual-identity.png';
+            a.href = canvas.toDataURL();
+            a.click();
+        });
+    }
+
+    function escapeHtml(text) {
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+    function escapeHtmlAttr(text) {
+        return text.replace(/"/g, '&quot;');
+    }
+
+    // --- CLOCK ---
+    setInterval(() => {
+        document.getElementById('clockDisplay').textContent = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    }, 1000);
+
+    // --- BOOT ---
+    if(currentUser) {
+        document.getElementById('inputUser').value = currentUser;
+        renderIdentity();
+    } else {
+        toggleMainCard(); // Open if guest
+    }
+    renderVault();
+
+</script>
+</body>
+</html>
